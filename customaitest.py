@@ -183,6 +183,4 @@ async def score_position(board, color):
 
 
 if __name__ == "__main__":
-    a = asyncio.run(score_position(board0, True))
-    b = asyncio.run(score_piece(board0, True))
-    print(a + b, a, b)
+    print(make_matrix(board0))
