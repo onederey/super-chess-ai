@@ -15,7 +15,7 @@ class Player():
             move = self.AI.random_ultimate(self.board)[0]
             self.board.push(move)
         elif strategy == "custom":
-            move = self.AI.custom_ultimate(self.board, self.depth+1, float('-inf'), float('inf'), True, color)[0]
+            move = self.AI.custom_ultimate(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]
             self.board.push(move)
         elif strategy == "stockfish":
             move = self.AI.minimax(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]  #поменять на True если АИ ходит первым!
@@ -110,6 +110,6 @@ class Player():
 
 
 if __name__ == '__main__':
-    game = Player(3)
-    game.play_stockfish_vs_custom()
+    game = Player(2)
+    game.play("custom")
     #game.play("custom"),

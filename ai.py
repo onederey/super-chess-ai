@@ -5,7 +5,6 @@ import asyncio
 import chess
 import chess.engine
 import random
-from chessboard import display
 
 PP = 100
 NN = 320
@@ -110,6 +109,59 @@ class ChessAIStockfishEval():
             foo.append(foo2)
         return foo
 
+    def get_score_custom(self, board, color):
+        matrix = self.make_matrix(board)
+        a = asyncio.run(self.score_piece(board, color))
+        b = asyncio.run(self.score_position(matrix, color))
+        c = asyncio.run(self.connected_pawns(matrix, color))
+        d = asyncio.run(self.isolated_pawns(matrix, color))
+        return a + b + c + d
+
+    def custom_evaluation(self, board, color):
+        return self.get_score_custom(board, color)
+
+    async def isolated_pawns(self, matrix, color):
+        score = 0
+        if color:
+            matrix = matrix.reverse()
+            for i in range(7):
+                for j in range(7):
+                    if matrix[i][j] == "P":
+                        if i > 0 and j > 0:
+                            if matrix[i-1][j-1] != "P" and matrix[i-1][j] != "P" and matrix[i-1][j+1] != "P" and matrix[i][j-1] != "P" and matrix[i][j+1] != "P" and matrix[i+1][j-1] != "P" and matrix[i+1][j] != "P" and matrix[i+1][j+1] != "P":
+                                score += 99                            
+            return score
+        else:
+            for i in range(7):
+                for j in range(7):
+                    if matrix[i][j] == "p":
+                        if i > 0 and j > 0:
+                            if matrix[i-1][j-1] != "p" and matrix[i-1][j] != "p" and matrix[i-1][j+1] != "p" and matrix[i][j-1] != "p" and matrix[i][j+1] != "p" and matrix[i+1][j-1] != "p" and matrix[i+1][j] != "p" and matrix[i+1][j+1] != "p":
+                                score += 99                             
+            return -score
+
+    async def connected_pawns(self, matrix, color):
+        score = 0
+        if color:
+            matrix = matrix.reverse()
+            for i in range(7):
+                for j in range(7):
+                    if matrix[i][j] == "P":
+                        if matrix[i+1][j+1] == "P":
+                            score += 15
+                        elif j > 0 and matrix[i+1][j-1] == "P":
+                            score += 100
+            return -score
+        else:
+            for i in range(7):
+                for j in range(7):
+                    if matrix[i][j] == "p":
+                        if matrix[i+1][j+1] == "p":
+                            score += 15
+                        elif j > 0 and matrix[i+1][j-1] == "p":
+                            score += 100
+            return score
+
 
     async def score_piece(self, board, color):
         fen = board.epd().split(" ", 1)[0]
@@ -132,7 +184,7 @@ class ChessAIStockfishEval():
                     pp += 1
                 elif piece == "Q":
                     qq += 1
-            return pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK
+            return -(pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
         else:
             for piece in fen:
                 if piece == "p":
@@ -145,11 +197,10 @@ class ChessAIStockfishEval():
                     pp += 1
                 elif piece == "q":
                     qq += 1
-            return -(pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
+            return (pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
 
 
-    async def score_position(self, board, color):
-        matrix = self.make_matrix(board)
+    async def score_position(self, matrix, color):
         score = 0
         if color:
             for i in range(8):
@@ -166,7 +217,7 @@ class ChessAIStockfishEval():
                         score += queens[i][j]
                     elif matrix[i][j] == "K":
                         score += king_start[i][j]
-            return score
+            return -score
         else:
             pawn.reverse()
             knights.reverse()
@@ -194,21 +245,14 @@ class ChessAIStockfishEval():
             rooks.reverse()
             queens.reverse()
             king_start.reverse()
-            return -score
-
-    def get_score_custom(self, board, color):
-        a = asyncio.run(self.score_piece(board, color))
-        b = asyncio.run(self.score_position(board, color))
-        return a + b
-
-    def custom_evaluation(self, board, color):
-        return self.get_score_custom(board, color)
+            return score
 
     def custom_ultimate(self, board, depth, a, b, max_player, color):
         if depth == 0 or board.is_game_over():
             return None, self.custom_evaluation(board, color)
 
         legal_moves = list(board.legal_moves)
+        #legal_moves = legal_moves[:len(legal_moves)-7]
         best_move = legal_moves[0]
         print(depth * "\t", depth)
         if max_player:
