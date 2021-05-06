@@ -287,49 +287,42 @@ class ChessAIStockfishEval():
             king_start.reverse()
             return score
 
-    def get_step(self, legal_moves, runner):
+    def get_step(self, legal_moves, runner, runs):
         ll = len(legal_moves)
-        if ll % 2 == 0:
-            step = ll / 4
-        else:
-            step = (ll-1) / 4
-        
-        step = int(step)
-        
-        if runner == 0:
-            return legal_moves[0:step]
-        elif runner == 1:
-            return legal_moves[step:step*2]
-        elif runner == 2:
-            return legal_moves[step*2:step*3]
-        else:
-            return legal_moves[step*3:step*4]
 
-    def custom_threads(self, board, depth, a, b, max_player, color):
-        board_0 = chess.Board(board.fen())
-        board_1 = chess.Board(board.fen())
-        board_2 = chess.Board(board.fen())
-        board_3 = chess.Board(board.fen())
-        legal_moves =list(board_0.legal_moves)
-        #legal_moves1 =list(board_1.legal_moves)
+        if ll % runs != 0:
+            legal_moves += legal_moves[0:int(ll%runs)]
         
-        param_list = [[board_0, depth, a, b, max_player, color, self.get_step(legal_moves, 0), 0, False],
-                    [board_1, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 1, False],
-                    [board_2, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 2, False],
-                    [board_3, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 3, False]]
+        step = int(ll / runs)
+        
+        for i in range(runs):
+            if i == runner:
+                return legal_moves[step * runner:step*(runner+1)]
+
+    def custom_threads(self, board, depth, a, b, max_player, color, runs):
+        boards = []
+        for i in range(runs):
+            boards.append(chess.Board(board.fen()))
+        legal_moves =list(boards[0].legal_moves)
+        
+        param_list = []
+        for i in range(runs):
+            param_list.append([boards[i], depth, a, b, max_player, color, self.get_step(legal_moves, i, runs), i, False])
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(self.custom_ultimate, param[0], param[1], param[2], param[3], param[4], param[5], param[6], param[7], param[8]) for param in param_list]
             runners = [f.result() for f in futures]
 
-        if runners[0][1] >= runners[1][1] and runners[0][1] >= runners[2][1] and runners[0][1] >= runners[3][1]:
-            return runners[0]
-        elif runners[1][1] >= runners[0][1] and runners[1][1] >= runners[2][1] and runners[1][1] >= runners[3][1]:
-            return runners[1]
-        elif runners[2][1] >= runners[1][1] and runners[2][1] >= runners[0][1] and runners[2][1] >= runners[3][1]:
-            return runners[2]
-        elif runners[3][1] >= runners[1][1] and runners[3][1] >= runners[2][1] and runners[3][1] >= runners[0][1]:
-            return runners[3]
+        #переписать сравнение
+        max_return = []
+        for run in runners:
+            max_return.append(run[1])
+        
+        max_value = max(max_return)
+        max_index = max_return.index(max_value)
+
+        return runners[max_index]
+        
 
     def custom_ultimate(self, board, depth, a, b, max_player, color, legal_moves, runner, is_move):
         if depth == 0 or board.is_game_over():
@@ -337,9 +330,9 @@ class ChessAIStockfishEval():
 
         if is_move:
             legal_moves = list(board.legal_moves)
-            legal_moves = self.get_step(legal_moves, runner)
+            legal_moves = self.get_step(legal_moves, runner, 4)
         
-        if len(legal_moves) == 0:
+        if legal_moves is None or len(legal_moves) == 0:
             return None, self.custom_evaluation(board, color)
         
         best_move = legal_moves[0]

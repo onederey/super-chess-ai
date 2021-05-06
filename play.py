@@ -15,7 +15,7 @@ class Player():
             move = self.AI.random_ultimate(self.board)[0]
             self.board.push(move)
         elif strategy == "custom":
-            move = self.AI.custom_threads(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]
+            move = self.AI.custom_threads(self.board, self.depth, float('-inf'), float('inf'), True, color, 8)[0]
             self.board.push(move)
         elif strategy == "stockfish":
             move = self.AI.minimax(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]  #поменять на True если АИ ходит первым!
