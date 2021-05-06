@@ -5,6 +5,9 @@ import asyncio
 import chess
 import chess.engine
 import random
+import threading
+import concurrent.futures
+import time
 
 PP = 100
 NN = 320
@@ -110,60 +113,97 @@ class ChessAIStockfishEval():
         return foo
 
     def get_score_custom(self, board, color):
+        if board.fen().find("Q") == -1 and board.fen().find("q") == -1:
+            king_start = king_late
+        
         matrix = self.make_matrix(board)
-        a = asyncio.run(self.score_piece(board, color))
-        b = asyncio.run(self.score_position(matrix, color))
-        c = asyncio.run(self.connected_pawns(matrix, color))
-        d = asyncio.run(self.isolated_pawns(matrix, color))
-        return a + b + c + d
+        #start_time = time.time()
+        a = (self.score_piece(board, color))
+        b = (self.score_position(matrix, color))
+        c = (self.connected_pawns(matrix, color))
+        d = (self.isolated_pawns(matrix, color))
+        e = (self.blocked_pawns(matrix, color))
+        #print("--- %s seconds ---" % (time.time() - start_time))
+        return a + b + c + d + e
 
     def custom_evaluation(self, board, color):
         return self.get_score_custom(board, color)
 
-    async def isolated_pawns(self, matrix, color):
-        score = 0
-        if color:
-            matrix = matrix.reverse()
-            for i in range(7):
-                for j in range(7):
-                    if matrix[i][j] == "P":
-                        if i > 0 and j > 0:
-                            if matrix[i-1][j-1] != "P" and matrix[i-1][j] != "P" and matrix[i-1][j+1] != "P" and matrix[i][j-1] != "P" and matrix[i][j+1] != "P" and matrix[i+1][j-1] != "P" and matrix[i+1][j] != "P" and matrix[i+1][j+1] != "P":
-                                score += 99                            
-            return score
-        else:
-            for i in range(7):
-                for j in range(7):
-                    if matrix[i][j] == "p":
-                        if i > 0 and j > 0:
-                            if matrix[i-1][j-1] != "p" and matrix[i-1][j] != "p" and matrix[i-1][j+1] != "p" and matrix[i][j-1] != "p" and matrix[i][j+1] != "p" and matrix[i+1][j-1] != "p" and matrix[i+1][j] != "p" and matrix[i+1][j+1] != "p":
-                                score += 99                             
-            return -score
+    def isolated_pawns(self, matrix, color):
+        try:
+            score = 0
+            if color:
+                matrix = matrix.reverse()
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "P":
+                            if i > 0 and j > 0:
+                                if matrix[i-1][j-1] != "P" and matrix[i-1][j] != "P" and matrix[i-1][j+1] != "P" and matrix[i][j-1] != "P" and matrix[i][j+1] != "P" and matrix[i+1][j-1] != "P" and matrix[i+1][j] != "P" and matrix[i+1][j+1] != "P":
+                                    score += 99                            
+                return score
+            else:
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "p":
+                            if i > 0 and j > 0:
+                                if matrix[i-1][j-1] != "p" and matrix[i-1][j] != "p" and matrix[i-1][j+1] != "p" and matrix[i][j-1] != "p" and matrix[i][j+1] != "p" and matrix[i+1][j-1] != "p" and matrix[i+1][j] != "p" and matrix[i+1][j+1] != "p":
+                                    score += 99                             
+                return -score
+        except TypeError:
+            return 0
 
-    async def connected_pawns(self, matrix, color):
-        score = 0
-        if color:
-            matrix = matrix.reverse()
-            for i in range(7):
-                for j in range(7):
-                    if matrix[i][j] == "P":
-                        if matrix[i+1][j+1] == "P":
-                            score += 15
-                        elif j > 0 and matrix[i+1][j-1] == "P":
-                            score += 100
-            return -score
-        else:
-            for i in range(7):
-                for j in range(7):
-                    if matrix[i][j] == "p":
-                        if matrix[i+1][j+1] == "p":
-                            score += 15
-                        elif j > 0 and matrix[i+1][j-1] == "p":
-                            score += 100
-            return score
+    def blocked_pawns(self, matrix, color):
+        try:
+            score = 0
+            if matrix is None:
+                return 0
+            if color:
+                matrix = matrix.reverse()
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "P":
+                            if matrix[i+1][j] != ".":
+                                score += 80
+                return -score
+            else:
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "p":
+                            if matrix[i+1][j+1] == ".":
+                                score += 80
+                return score
+        except TypeError:
+            return 0
+
+    def connected_pawns(self, matrix, color):
+        try:
+            score = 0
+            if matrix is None:
+                return 0
+            if color:
+                matrix = matrix.reverse()
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "P":
+                            if matrix[i+1][j+1] == "P":
+                                score += 100
+                            elif j > 0 and matrix[i+1][j-1] == "P":
+                                score += 100
+                return -score
+            else:
+                for i in range(7):
+                    for j in range(7):
+                        if matrix[i][j] == "p":
+                            if matrix[i+1][j+1] == "p":
+                                score += 100
+                            elif j > 0 and matrix[i+1][j-1] == "p":
+                                score += 100
+                return score
+        except TypeError:
+            return 0
 
 
-    async def score_piece(self, board, color):
+    def score_piece(self, board, color):
         fen = board.epd().split(" ", 1)[0]
 
         pp = 0
@@ -200,7 +240,7 @@ class ChessAIStockfishEval():
             return (pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
 
 
-    async def score_position(self, matrix, color):
+    def score_position(self, matrix, color):
         score = 0
         if color:
             for i in range(8):
@@ -247,12 +287,61 @@ class ChessAIStockfishEval():
             king_start.reverse()
             return score
 
-    def custom_ultimate(self, board, depth, a, b, max_player, color):
+    def get_step(self, legal_moves, runner):
+        ll = len(legal_moves)
+        if ll % 2 == 0:
+            step = ll / 4
+        else:
+            step = (ll-1) / 4
+        
+        step = int(step)
+        
+        if runner == 0:
+            return legal_moves[0:step]
+        elif runner == 1:
+            return legal_moves[step:step*2]
+        elif runner == 2:
+            return legal_moves[step*2:step*3]
+        else:
+            return legal_moves[step*3:step*4]
+
+    def custom_threads(self, board, depth, a, b, max_player, color):
+        board_0 = chess.Board(board.fen())
+        board_1 = chess.Board(board.fen())
+        board_2 = chess.Board(board.fen())
+        board_3 = chess.Board(board.fen())
+        legal_moves =list(board_0.legal_moves)
+        #legal_moves1 =list(board_1.legal_moves)
+        
+        param_list = [[board_0, depth, a, b, max_player, color, self.get_step(legal_moves, 0), 0, False],
+                    [board_1, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 1, False],
+                    [board_2, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 2, False],
+                    [board_3, depth, a, b, max_player, color, self.get_step(legal_moves, 1), 3, False]]
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.custom_ultimate, param[0], param[1], param[2], param[3], param[4], param[5], param[6], param[7], param[8]) for param in param_list]
+            runners = [f.result() for f in futures]
+
+        if runners[0][1] >= runners[1][1] and runners[0][1] >= runners[2][1] and runners[0][1] >= runners[3][1]:
+            return runners[0]
+        elif runners[1][1] >= runners[0][1] and runners[1][1] >= runners[2][1] and runners[1][1] >= runners[3][1]:
+            return runners[1]
+        elif runners[2][1] >= runners[1][1] and runners[2][1] >= runners[0][1] and runners[2][1] >= runners[3][1]:
+            return runners[2]
+        elif runners[3][1] >= runners[1][1] and runners[3][1] >= runners[2][1] and runners[3][1] >= runners[0][1]:
+            return runners[3]
+
+    def custom_ultimate(self, board, depth, a, b, max_player, color, legal_moves, runner, is_move):
         if depth == 0 or board.is_game_over():
             return None, self.custom_evaluation(board, color)
 
-        legal_moves = list(board.legal_moves)
-        #legal_moves = legal_moves[:len(legal_moves)-7]
+        if is_move:
+            legal_moves = list(board.legal_moves)
+            legal_moves = self.get_step(legal_moves, runner)
+        
+        if len(legal_moves) == 0:
+            return None, self.custom_evaluation(board, color)
+        
         best_move = legal_moves[0]
         print(depth * "\t", depth)
         if max_player:
@@ -260,7 +349,7 @@ class ChessAIStockfishEval():
             for move in legal_moves:
                 board.push(move)
                 current = self.custom_ultimate(
-                    board, depth - 1, a, b, False, not color)[1]
+                    board, depth - 1, a, b, False, not color, legal_moves, runner, True)[1]
                 board.pop()
                 if current > maxEval:
                     maxEval = current
@@ -273,8 +362,8 @@ class ChessAIStockfishEval():
             minEval = float('inf')
             for move in legal_moves:
                 board.push(move)
-                current = self.custom_ultimate(
-                    board, depth - 1, a, b, True, not color)[1]
+                current = (self.custom_ultimate(
+                    board, depth - 1, a, b, True, not color, legal_moves, runner, True))[1]
                 board.pop()
                 if current < minEval:
                     minEval = current
@@ -300,7 +389,7 @@ class ChessAIStockfishEval():
         if depth == 0 or board.is_game_over():
             return None, self.stockfish_evaluation(board, color, self.time)
 
-        print("\t" * depth, depth)
+        #print("\t" * depth, depth)
 
         legal_moves = list(board.legal_moves)
         best_move = legal_moves[0]
