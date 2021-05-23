@@ -9,14 +9,14 @@ class Player():
         self.AI = ai.ChessAIStockfishEval()
         self.board = chess.Board()
 
-    def ai_move(self, strategy, color = False):
+    def ai_move(self, strategy, board1, color = False):
         print("AI is thinking...")
         if strategy == "random":
             move = self.AI.random_ultimate(self.board)[0]
             self.board.push(move)
         elif strategy == "custom":
-            move = self.AI.custom_threads(self.board, self.depth, float('-inf'), float('inf'), True, color, 8)[0]
-            self.board.push(move)
+            move = self.AI.custom_threads(board1, self.depth, float('-inf'), float('inf'), True, color, 8)[0]
+            board1.push(move)
         elif strategy == "stockfish":
             move = self.AI.minimax(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]  #поменять на True если АИ ходит первым!
             self.board.push(move)
