@@ -1,6 +1,7 @@
 import ai
 import chess
 from chessboard import display #play test
+import qtwindow
 
 class Player():
 
@@ -16,7 +17,10 @@ class Player():
             self.board.push(move)
         elif strategy == "custom":
             move = self.AI.custom_threads(board1, self.depth, float('-inf'), float('inf'), True, color, 8)[0]
-            board1.push(move)
+            if (self.board.is_checkmate() == False) and (self.board.is_game_over() != True) and (move != None):
+                board1.push(move)
+            else:
+                qtwindow.MainWindow.showDialog()
         elif strategy == "stockfish":
             move = self.AI.minimax(self.board, self.depth, float('-inf'), float('inf'), True, color)[0]  #поменять на True если АИ ходит первым!
             self.board.push(move)

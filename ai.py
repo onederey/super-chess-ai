@@ -164,14 +164,14 @@ class ChessAIStockfishEval():
                         if matrix[i][j] == "P":
                             if matrix[i+1][j] != ".":
                                 score += 80
-                return -score
+                return score
             else:
                 for i in range(7):
                     for j in range(7):
                         if matrix[i][j] == "p":
                             if matrix[i+1][j+1] == ".":
                                 score += 80
-                return score
+                return -score
         except TypeError:
             return 0
 
@@ -189,7 +189,7 @@ class ChessAIStockfishEval():
                                 score += 100
                             elif j > 0 and matrix[i+1][j-1] == "P":
                                 score += 100
-                return -score
+                return score
             else:
                 for i in range(7):
                     for j in range(7):
@@ -198,7 +198,7 @@ class ChessAIStockfishEval():
                                 score += 100
                             elif j > 0 and matrix[i+1][j-1] == "p":
                                 score += 100
-                return score
+                return -score
         except TypeError:
             return 0
 
@@ -224,7 +224,7 @@ class ChessAIStockfishEval():
                     pp += 1
                 elif piece == "Q":
                     qq += 1
-            return -(pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
+            return (pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
         else:
             for piece in fen:
                 if piece == "p":
@@ -237,7 +237,7 @@ class ChessAIStockfishEval():
                     pp += 1
                 elif piece == "q":
                     qq += 1
-            return (pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
+            return -(pp * PP + rr * RR + nn * NN + bb * BB + qq * QQ + KK)
 
 
     def score_position(self, matrix, color):
@@ -257,7 +257,7 @@ class ChessAIStockfishEval():
                         score += queens[i][j]
                     elif matrix[i][j] == "K":
                         score += king_start[i][j]
-            return -score
+            return score
         else:
             pawn.reverse()
             knights.reverse()
@@ -285,7 +285,7 @@ class ChessAIStockfishEval():
             rooks.reverse()
             queens.reverse()
             king_start.reverse()
-            return score
+            return -score
 
     def get_step(self, legal_moves, runner, runs):
         ll = len(legal_moves)
@@ -315,13 +315,19 @@ class ChessAIStockfishEval():
 
         #переписать сравнение
         max_return = []
+        c = 0
         for run in runners:
-            max_return.append(run[1])
+            if run[0] != None:
+                max_return.append(run[1])
+            else:
+                c += 1
         
-        max_value = max(max_return)
-        max_index = max_return.index(max_value)
-
-        return runners[max_index]
+        if len(max_return) != 0:
+            max_value = min(max_return)
+            max_index = max_return.index(max_value)
+            return runners[max_index + c]
+        else:
+            return runners[c - 1]
         
 
     def custom_ultimate(self, board, depth, a, b, max_player, color, legal_moves, runner, is_move):
@@ -409,7 +415,8 @@ class ChessAIStockfishEval():
                             best_move = move
                         a = max(a, current)
                     except TypeError:
-                        print("Error")
+                        #print("Error")
+                        continue
                 if b <= a:
                     break
             return best_move, maxEval
@@ -435,7 +442,8 @@ class ChessAIStockfishEval():
                             best_move = move
                         b = min(b, current)
                     except TypeError:
-                        print("Error")
+                        #print("Error")
+                        continue
                 if b <= a:
                     break
             return best_move, minEval
