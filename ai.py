@@ -9,11 +9,11 @@ import threading
 import concurrent.futures
 import time
 
-PP = 100
-NN = 320
-BB = 330
-RR = 500
-QQ = 900
+PP = 1000
+NN = 3200
+BB = 3300
+RR = 5000
+QQ = 9000
 KK = 20000
 
 pawn = [[0, 0, 0, 0, 0, 0, 0, 0],
@@ -43,13 +43,22 @@ bishops = [[-20, -10, -10, -10, -10, -10, -10, -20],
            [-10,  5,  0,  0,  0,  0,  5, -10],
            [-20, -10, -10, -10, -10, -10, -10, -20]]
 
-rooks = [[0, 0, 0, 0, 0, 0, 0, 0],
+rooks1 = [[0, 0, 0, 0, 0, 0, 0, 0],
          [5, 10, 10, 10, 10, 10, 10,  5],
          [-5,  0,  0,  0,  0,  0,  0, -5],
          [-5,  0,  0,  0,  0,  0,  0, -5],
          [-5,  0,  0,  0,  0,  0,  0, -5],
          [-5,  0,  0,  0,  0,  0,  0, -5],
          [-5,  0,  0,  0,  0,  0,  0, -5],
+         [0,  0,  0,  5,  5,  0,  0,  0]]
+
+rooks = [[0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0,  0],
+         [-0,  0,  0,  0,  0,  0,  0, -0],
+         [-0,  0,  0,  0,  0,  0,  0, -0],
+         [-0,  0,  0,  0,  0,  0,  0, -0],
+         [-0,  0,  0,  0,  0,  0,  0, -0],
+         [-0,  0,  0,  0,  0,  0,  0, -0],
          [0,  0,  0,  5,  5,  0,  0,  0]]
 
 queens = [[-20, -10, -10, -5, -5, -10, -10, -20],
@@ -70,8 +79,6 @@ king_start = [[-30, -40, -40, -50, -50, -40, -40, -30],
               [20, 20,  0,  0,  0,  0, 20, 20],
               [20, 30, 10,  0,  0, 10, 30, 20]]
 
-# late condition Both sides have no queens or
-# Every side which has a queen has additionally no other pieces or one minorpiece maximum
 # ???
 
 king_late = [[-50, -40, -30, -20, -20, -30, -40, -50],
@@ -139,16 +146,16 @@ class ChessAIStockfishEval():
                         if matrix[i][j] == "P":
                             if i > 0 and j > 0:
                                 if matrix[i-1][j-1] != "P" and matrix[i-1][j] != "P" and matrix[i-1][j+1] != "P" and matrix[i][j-1] != "P" and matrix[i][j+1] != "P" and matrix[i+1][j-1] != "P" and matrix[i+1][j] != "P" and matrix[i+1][j+1] != "P":
-                                    score += 99                            
-                return score
+                                    score += 300                            
+                return -score
             else:
                 for i in range(7):
                     for j in range(7):
                         if matrix[i][j] == "p":
                             if i > 0 and j > 0:
                                 if matrix[i-1][j-1] != "p" and matrix[i-1][j] != "p" and matrix[i-1][j+1] != "p" and matrix[i][j-1] != "p" and matrix[i][j+1] != "p" and matrix[i+1][j-1] != "p" and matrix[i+1][j] != "p" and matrix[i+1][j+1] != "p":
-                                    score += 99                             
-                return -score
+                                    score += 300                             
+                return score
         except TypeError:
             return 0
 
@@ -163,15 +170,15 @@ class ChessAIStockfishEval():
                     for j in range(7):
                         if matrix[i][j] == "P":
                             if matrix[i+1][j] != ".":
-                                score += 80
-                return score
+                                score += 250
+                return -score
             else:
                 for i in range(7):
                     for j in range(7):
                         if matrix[i][j] == "p":
                             if matrix[i+1][j+1] == ".":
-                                score += 80
-                return -score
+                                score += 250
+                return score
         except TypeError:
             return 0
 
@@ -186,18 +193,18 @@ class ChessAIStockfishEval():
                     for j in range(7):
                         if matrix[i][j] == "P":
                             if matrix[i+1][j+1] == "P":
-                                score += 100
+                                score += 260
                             elif j > 0 and matrix[i+1][j-1] == "P":
-                                score += 100
+                                score += 260
                 return score
             else:
                 for i in range(7):
                     for j in range(7):
                         if matrix[i][j] == "p":
                             if matrix[i+1][j+1] == "p":
-                                score += 100
+                                score += 260
                             elif j > 0 and matrix[i+1][j-1] == "p":
-                                score += 100
+                                score += 260
                 return -score
         except TypeError:
             return 0
@@ -325,8 +332,10 @@ class ChessAIStockfishEval():
         if len(max_return) != 0:
             max_value = min(max_return)
             max_index = max_return.index(max_value)
+            print(max_return, runners[max_index + c])
             return runners[max_index + c]
         else:
+            print(max_return, runners[c - 1])
             return runners[c - 1]
         
 
@@ -342,13 +351,17 @@ class ChessAIStockfishEval():
             return None, self.custom_evaluation(board, color)
         
         best_move = legal_moves[0]
-        print(depth * "\t", depth)
+
+        #print(depth * "\t", depth)
         if max_player:
             maxEval = float('-inf')
             for move in legal_moves:
+                if runner == 0:
+                    print(depth * "\t", depth, " ", move, " ", maxEval, " ", max_player)
                 board.push(move)
+                color = not color
                 current = self.custom_ultimate(
-                    board, depth - 1, a, b, False, not color, legal_moves, runner, True)[1]
+                    board, depth - 1, a, b, False, color, legal_moves, runner, True)[1]
                 board.pop()
                 if current > maxEval:
                     maxEval = current
@@ -360,9 +373,12 @@ class ChessAIStockfishEval():
         else:
             minEval = float('inf')
             for move in legal_moves:
+                if runner == 0:
+                    print(depth * "\t", depth, " ", move, " ", minEval, " ", max_player)
                 board.push(move)
+                color = not color
                 current = (self.custom_ultimate(
-                    board, depth - 1, a, b, True, not color, legal_moves, runner, True))[1]
+                    board, depth - 1, a, b, True, color, legal_moves, runner, True))[1]
                 board.pop()
                 if current < minEval:
                     minEval = current

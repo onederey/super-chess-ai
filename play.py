@@ -16,7 +16,7 @@ class Player():
             move = self.AI.random_ultimate(self.board)[0]
             self.board.push(move)
         elif strategy == "custom":
-            move = self.AI.custom_threads(board1, self.depth, float('-inf'), float('inf'), True, color, 8)[0]
+            move = self.AI.custom_threads(board1, self.depth, float('-inf'), float('inf'), False, color, 8)[0]
             if (self.board.is_checkmate() == False) and (self.board.is_game_over() != True) and (move != None):
                 board1.push(move)
             else:
